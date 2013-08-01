@@ -8,7 +8,7 @@ class ParsedFn {
   List parts;
 
   ParsedFn(this.getter, [this.assignFn]);
-  call([s, l]) => getter(s, l);
+  call([s, l]) => time('ParsedFn.call', () => getter(s, l));
   assign(s, v, [l]) => assignFn(s, v, l);
 
   get assignable => assignFn != null;
@@ -141,6 +141,7 @@ stripTrailingNulls(List l) {
 
 // Returns a tuple [found, value]
 getterChild(value, childKey) {
+  return time('Parser.getterChild', () {
   if (value is List && childKey is num) {
     if (childKey < value.length) {
       return [true, value[childKey]];
@@ -161,10 +162,10 @@ getterChild(value, childKey) {
 
   InstanceMirror instanceMirror = reflect(value);
   Symbol curSym = new Symbol(childKey);
-  try {
+  //try {
     // maybe it is a member field?
-    return [true, instanceMirror.getField(curSym).reflectee];
-  } catch (e) {
+  //  return [true, instanceMirror.getField(curSym).reflectee];
+  //} catch (e) {
     // maybe it is a member method?
     if (instanceMirror.type.members.containsKey(curSym)) {
       MethodMirror methodMirror = instanceMirror.type.members[curSym];
@@ -178,7 +179,8 @@ getterChild(value, childKey) {
       })];
     }
     return [false, null];
-  }
+  //}
+  });
 }
 
 getter(scope, locals, path) {

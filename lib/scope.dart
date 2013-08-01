@@ -174,6 +174,7 @@ class Scope implements Map {
 
 
   $digest() {
+    time('Scope.digest', () {
     var value, last,
         asyncQueue = _asyncQueue,
         length,
@@ -192,6 +193,7 @@ class Scope implements Map {
         //asyncQueue = current._asyncQueue;
         //dump('aQ: ${asyncQueue.length}');
 
+        time('Scope.digest.asyncQueue', () {
         while(asyncQueue.length > 0) {
           try {
             current.$eval(asyncQueue.removeAt(0));
@@ -199,35 +201,39 @@ class Scope implements Map {
             _exceptionHandler(e, s);
           }
         }
+        });
 
+        time('Scope.digest.scopes', () {
         do { // "traverse the scopes" loop
           if ((watchers = current._watchers) != null) {
-            // process our watches
-            length = watchers.length;
-            while (length-- > 0) {
-              try {
-                watch = watchers[length];
-                if ((value = watch.get(current)) != (last = watch.last) &&
-                    !(value is num && last is num && value.isNaN && last.isNaN)) {
-                  dirty = true;
-                  watch.last = value;
-                  watch.fn(value, ((last == initWatchVal) ? value : last), current);
-                  if (_ttlLeft < 5) {
-                    logIdx = 4 - _ttlLeft;
-                    while (watchLog.length <= logIdx) {
-                      watchLog.add([]);
+            time(' - Scope.digest.process', () {
+              // process our watches
+              length = watchers.length;
+              while (length-- > 0) {
+                try {
+                  watch = watchers[length];
+                  if ((value = watch.get(current)) != (last = watch.last) &&
+                      !(value is num && last is num && value.isNaN && last.isNaN)) {
+                    dirty = true;
+                    watch.last = value;
+                    watch.fn(value, ((last == initWatchVal) ? value : last), current);
+                    if (_ttlLeft < 5) {
+                      logIdx = 4 - _ttlLeft;
+                      while (watchLog.length <= logIdx) {
+                        watchLog.add([]);
+                      }
+                      logMsg = (watch.exp is Function)
+                          ? 'fn: ' + (watch.exp.name || watch.exp.toString())
+                          : watch.exp;
+                      logMsg += '; newVal: ' + toJson(value) + '; oldVal: ' + toJson(last);
+                      watchLog[logIdx].add(logMsg);
                     }
-                    logMsg = (watch.exp is Function)
-                        ? 'fn: ' + (watch.exp.name || watch.exp.toString())
-                        : watch.exp;
-                    logMsg += '; newVal: ' + toJson(value) + '; oldVal: ' + toJson(last);
-                    watchLog[logIdx].add(logMsg);
                   }
+                } catch (e, s) {
+                  _exceptionHandler(e, s);
                 }
-              } catch (e, s) {
-                _exceptionHandler(e, s);
               }
-            }
+            });
           }
 
           // Insanity Warning: scope depth-first traversal
@@ -248,6 +254,7 @@ class Scope implements Map {
             next = current._childHead;
           }
         } while ((current = next) != null);
+        });
 
         if(dirty && (_ttlLeft--) == 0) {
           throw '$_ttl \$digest() iterations reached. Aborting!\n' +
@@ -257,6 +264,7 @@ class Scope implements Map {
     } finally {
       _clearPhase();
     }
+    });
   }
 
 

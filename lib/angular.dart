@@ -117,38 +117,40 @@ class AngularModule extends Module {
   DirectiveRegistry _directives = new DirectiveRegistry();
 
   AngularModule() {
-    value(DirectiveRegistry, _directives);
-    type(Compiler, Compiler);
-    type(ExceptionHandler, ExceptionHandler);
-    type(Scope, Scope);
-    type(Parser, Parser);
-    type(Interpolate, Interpolate);
-    type(CacheFactory, CacheFactory);
-    type(Http, Http);
-    type(UrlRewriter, UrlRewriter);
-    type(HttpBackend, HttpBackend);
-    type(BlockCache, BlockCache);
-    type(TemplateCache, TemplateCache);
+    time('AngularModule', () {
+      value(DirectiveRegistry, _directives);
+      type(Compiler, Compiler);
+      type(ExceptionHandler, ExceptionHandler);
+      type(Scope, Scope);
+      type(Parser, Parser);
+      type(Interpolate, Interpolate);
+      type(CacheFactory, CacheFactory);
+      type(Http, Http);
+      type(UrlRewriter, UrlRewriter);
+      type(HttpBackend, HttpBackend);
+      type(BlockCache, BlockCache);
+      type(TemplateCache, TemplateCache);
 
-    value(ScopeDigestTTL, new ScopeDigestTTL(5));
+      value(ScopeDigestTTL, new ScopeDigestTTL(5));
 
-    directive(NgTextMustacheDirective);
-    directive(NgAttrMustacheDirective);
+      directive(NgTextMustacheDirective);
+      directive(NgAttrMustacheDirective);
 
-    directive(NgBindAttrDirective);
-    directive(NgClassAttrDirective);
-    directive(NgClickAttrDirective);
-    directive(NgCloakAttrDirective);
-    directive(NgControllerAttrDirective);
-    directive(NgDisabledAttrDirective);
-    directive(NgHideAttrDirective);
-    directive(NgIfAttrDirective);
-    directive(NgIncludeAttrDirective);
-    directive(NgRepeatAttrDirective);
-    directive(NgShowAttrDirective);
+      directive(NgBindAttrDirective);
+      directive(NgClassAttrDirective);
+      directive(NgClickAttrDirective);
+      directive(NgCloakAttrDirective);
+      directive(NgControllerAttrDirective);
+      directive(NgDisabledAttrDirective);
+      directive(NgHideAttrDirective);
+      directive(NgIfAttrDirective);
+      directive(NgIncludeAttrDirective);
+      directive(NgRepeatAttrDirective);
+      directive(NgShowAttrDirective);
 
-    directive(InputDirective);
-    directive(NgModel);
+      directive(InputDirective);
+      directive(NgModel);
+    });
   }
 
   directive(Type directive) {
@@ -160,13 +162,57 @@ class AngularModule extends Module {
 
 // helper for bootstrapping angular
 bootstrapAngular(modules, [rootElementSelector = '[ng-app]']) {
-  List<dom.Node> topElt = dom.query(rootElementSelector).nodes.toList();
-  assert(topElt.length > 0);
+  return time('bootstrapAngular', () {
+    List<dom.Node> topElt = dom.query(rootElementSelector).nodes.toList();
+    assert(topElt.length > 0);
 
-  Injector injector = new Injector(modules);
+    Injector injector = time('bootstrapAngular.new injector', () => new Injector(modules));
 
-  injector.invoke((Compiler $compile, Scope $rootScope) {
-    $compile(topElt)(injector, topElt);
-    $rootScope.$digest();
+    time('bootstrapAngular.injector.invoke', () {
+      injector.invoke((Compiler $compile, Scope $rootScope) {
+        time('bootstrapAngular.compile', () => $compile(topElt)(injector, topElt));
+        time('bootstrapAngular.digest', () => $rootScope.$digest());
+      });
+    });
+    return injector;
   });
+}
+
+class TimerStat {
+  int count = 0;
+  double total = 0.0;
+  double avg = 0.0;
+  double min = double.MAX_FINITE;
+  double max = 0.0;
+}
+
+Map<String, TimerStat> stats = <String, TimerStat>{};
+
+time(desc, fn) {
+  var stat = stats[desc];
+  if (stat == null) {
+    stat = new TimerStat();
+    stats[desc] = stat;
+  }
+  var start = dom.window.performance.now();
+  var val = fn();
+  var diff = dom.window.performance.now() - start;
+  stat.count++;
+  stat.total += diff;
+  if (diff < stat.min) stat.min = diff;
+  if (diff > stat.max) stat.max = diff;
+  stat.avg = (stat.avg * (stat.count - 1) + diff) / stat.count;
+  return val;
+}
+
+dumpTimerStats() {
+  print('------------------------');
+  double total = 0.0;
+  stats.forEach((desc, stat) {
+    print('$desc count: ${stat.count} total: ${stat.total} avg: ${stat.avg} min: ${stat.min} max: ${stat.max} ');
+    total += stat.total;
+  });
+  print('------------------------');
+  print('total: $total');
+  print('------------------------');
 }

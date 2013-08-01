@@ -10,80 +10,82 @@ class Compiler {
 
   _compileBlock(NodeCursor domCursor, NodeCursor templateCursor,
                List<DirectiveRef> useExistingDirectiveRefs) {
-    if (domCursor.nodeList().length == 0) return null;
+    return time('_compileBlock', () {
+      if (domCursor.nodeList().length == 0) return null;
 
-    var directivePositions = null; // don't pre-create to create spars tree and prevent GC pressure.
-    var cursorAlreadyAdvanced;
+      var directivePositions = null; // don't pre-create to create spars tree and prevent GC pressure.
+      var cursorAlreadyAdvanced;
 
-    do {
-      var declaredDirectiveRefs = useExistingDirectiveRefs == null
-          ?  selector(domCursor.nodeList()[0])
-          : useExistingDirectiveRefs;
-      var compileChildren = true;
-      var childDirectivePositions = null;
-      List<DirectiveRef> usableDirectiveRefs = null;
+      do {
+        var declaredDirectiveRefs = useExistingDirectiveRefs == null
+            ?  selector(domCursor.nodeList()[0])
+            : useExistingDirectiveRefs;
+        var compileChildren = true;
+        var childDirectivePositions = null;
+        List<DirectiveRef> usableDirectiveRefs = null;
 
-      cursorAlreadyAdvanced = false;
+        cursorAlreadyAdvanced = false;
 
-      for (var j = 0, jj = declaredDirectiveRefs.length; j < jj; j++) {
-        var directiveRef = declaredDirectiveRefs[j];
-        Directive directive = directiveRef.directive;
-        var blockFactory = null;
+        for (var j = 0, jj = declaredDirectiveRefs.length; j < jj; j++) {
+          var directiveRef = declaredDirectiveRefs[j];
+          Directive directive = directiveRef.directive;
+          var blockFactory = null;
 
-        if (directive.$generate != null) {
-          var nodeList = domCursor.nodeList();
-          var generatedDirectives = directive.$generate(directiveRef.value, nodeList);
+          if (directive.$generate != null) {
+            var nodeList = domCursor.nodeList();
+            var generatedDirectives = directive.$generate(directiveRef.value, nodeList);
 
-          for (var k = 0, kk = generatedDirectives.length; k < kk; k++) {
-            String generatedSelector = generatedDirectives[k][0];
-            String generatedValue = generatedDirectives[k][1];
-            Type generatedDirectiveType = $directiveInjector.get(generatedSelector);
-            var generatedDirectiveRef = new DirectiveRef(
-                new Directive(generatedDirectiveType),
-                generatedValue);
+            for (var k = 0, kk = generatedDirectives.length; k < kk; k++) {
+              String generatedSelector = generatedDirectives[k][0];
+              String generatedValue = generatedDirectives[k][1];
+              Type generatedDirectiveType = $directiveInjector.get(generatedSelector);
+              var generatedDirectiveRef = new DirectiveRef(
+                  new Directive(generatedDirectiveType),
+                  generatedValue);
 
-            declaredDirectiveRefs.add(generatedDirectiveRef);
+              declaredDirectiveRefs.add(generatedDirectiveRef);
+            }
           }
+          if (directive.$transclude != null) {
+            var remainingDirectives = declaredDirectiveRefs.sublist(j + 1);
+            blockFactory = compileTransclusion(directive.$transclude,
+                domCursor, templateCursor,
+                directiveRef, remainingDirectives);
+
+            j = jj; // stop processing further directives since they belong to transclusion;
+            compileChildren = false;
+          }
+          if (usableDirectiveRefs == null) {
+            usableDirectiveRefs = [];
+          }
+          directiveRef.blockFactory = blockFactory;
+          usableDirectiveRefs.add(directiveRef);
         }
-        if (directive.$transclude != null) {
-          var remainingDirectives = declaredDirectiveRefs.sublist(j + 1);
-          blockFactory = compileTransclusion(directive.$transclude,
-              domCursor, templateCursor,
-              directiveRef, remainingDirectives);
 
-          j = jj; // stop processing further directives since they belong to transclusion;
-          compileChildren = false;
+        if (compileChildren && domCursor.descend()) {
+          templateCursor.descend();
+
+          childDirectivePositions = compileChildren
+              ? _compileBlock(domCursor, templateCursor, null)
+              : null;
+
+          domCursor.ascend();
+          templateCursor.ascend();
         }
-        if (usableDirectiveRefs == null) {
-          usableDirectiveRefs = [];
+
+        if (childDirectivePositions != null || usableDirectiveRefs != null) {
+          if (directivePositions == null) directivePositions = [];
+          var directiveOffsetIndex = templateCursor.index;
+
+          directivePositions
+              ..add(directiveOffsetIndex)
+              ..add(usableDirectiveRefs)
+              ..add(childDirectivePositions);
         }
-        directiveRef.blockFactory = blockFactory;
-        usableDirectiveRefs.add(directiveRef);
-      }
+      } while (templateCursor.microNext() && domCursor.microNext());
 
-      if (compileChildren && domCursor.descend()) {
-        templateCursor.descend();
-
-        childDirectivePositions = compileChildren
-            ? _compileBlock(domCursor, templateCursor, null)
-            : null;
-
-        domCursor.ascend();
-        templateCursor.ascend();
-      }
-
-      if (childDirectivePositions != null || usableDirectiveRefs != null) {
-        if (directivePositions == null) directivePositions = [];
-        var directiveOffsetIndex = templateCursor.index;
-
-        directivePositions
-            ..add(directiveOffsetIndex)
-            ..add(usableDirectiveRefs)
-            ..add(childDirectivePositions);
-      }
-    } while (templateCursor.microNext() && domCursor.microNext());
-
-    return directivePositions;
+      return directivePositions;
+    });
   }
 
   BlockFactory compileTransclusion(String selector,
@@ -122,11 +124,13 @@ class Compiler {
   BlockFactory call(List<dom.Node> elements) {
                  List<dom.Node> domElements = elements;
                  List<dom.Node> templateElements = cloneElements(domElements);
-    var directivePositions = _compileBlock(
-        new NodeCursor(domElements), new NodeCursor(templateElements),
-        null);
+    return time('\$compile', () {
+      var directivePositions = _compileBlock(
+          new NodeCursor(domElements), new NodeCursor(templateElements),
+          null);
 
-    return new BlockFactory(templateElements,
-                         directivePositions == null ? [] : directivePositions);
+      return new BlockFactory(templateElements,
+          directivePositions == null ? [] : directivePositions);
+    });
   }
 }

@@ -549,10 +549,12 @@ class BlockFactory {
   }
 
   Block call(Injector injector, [List<dom.Node> elements]) {
-    if (elements == null) {
-      elements = cloneElements(templateElements);
-    }
-    return new Block(injector, elements, directivePositions);
+    return time('blockFactory.call', () {
+      if (elements == null) {
+        elements = cloneElements(templateElements);
+      }
+      return new Block(injector, elements, directivePositions);
+    });
   }
 
   BoundBlockFactory bind(Injector injector) {
