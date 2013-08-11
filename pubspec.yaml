@@ -1,9 +1,8 @@
 name: angular
 description: Angular for dart.
-
 dependencies:
-  unittest: any
   browser: any
+  di:
+    git: https://github.com/angular/di.dart.git
   js: any
-  di: any
-
+  unittest: any
