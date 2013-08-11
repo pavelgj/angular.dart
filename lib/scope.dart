@@ -196,6 +196,7 @@ class Scope implements Map {
   }
 
   $digest() {
+    time('Scope.\$digest', () {
     var value, last,
         asyncQueue = _asyncQueue,
         length,
@@ -278,7 +279,9 @@ class Scope implements Map {
       } while (dirty || asyncQueue.length > 0);
     } finally {
       _clearPhase();
+      dumpTimerStats();
     }
+    });
   }
 
 

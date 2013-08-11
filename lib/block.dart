@@ -43,10 +43,12 @@ class Block implements ElementWrapper {
   Block(Injector this._injector,
         List<dom.Node> this.elements,
         List directivePositions) {
+    time('new Block', () {
     ASSERT(elements != null);
     ASSERT(directivePositions != null);
     ASSERT(_injector != null);
     _link(elements, directivePositions, _injector);
+    });
   }
 
   _link(List<dom.Node> nodeList, List directivePositions, Injector parentInjector) {
@@ -84,6 +86,7 @@ class Block implements ElementWrapper {
   }
 
   Injector _instantiateDirectives(Injector parentInjector, dom.Node node, List<DirectiveRef> directiveRefs) {
+    return time('  Block._instantiateDirectives', () {
     if (directiveRefs == null || directiveRefs.length == 0) return parentInjector;
     var nodeModule = new Module();
     var blockHoleFactory = () => null;
@@ -130,6 +133,7 @@ class Block implements ElementWrapper {
     var nodeInjector = parentInjector.createChild([nodeModule]);
     directiveRefs.forEach((ref) => nodeInjector.get(ref.directive.type));
     return nodeInjector;
+    });
   }
 
   /// DI visibility callback allowing node-local visibility.

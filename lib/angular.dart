@@ -6,6 +6,7 @@ import "dart:async" as async;
 import "dart:json" as json;
 import 'dart:html' as dom;
 import 'package:di/di.dart';
+import 'package:di/perf.dart';
 import 'debug.dart';
 
 part 'block.dart';

@@ -853,7 +853,8 @@ class Parser {
     if (tokens.length != 0) {
       throw parserError("Unconsumed token ${tokens[0].text}");
     }
-    return value;
+    return new ParsedFn((s, l) => time('ParsedFn.getter', () => value.getter(s, l)),
+        (s, l, v) => time('ParsedFn.setter', () => value.assignFn(s, l, v)));
   }
 
 }

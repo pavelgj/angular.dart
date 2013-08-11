@@ -3,6 +3,8 @@ description: Angular for dart.
 dependencies:
   browser: any
   di:
-    git: https://github.com/angular/di.dart.git
+    git:
+      ref: perf
+      url: https://github.com/pavelgj/di.dart.git
   js: any
   unittest: any
