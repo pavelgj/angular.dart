@@ -90,8 +90,8 @@ class Zone {
     // Uncomment the next line to have stack traces attached to
     // assertInZone() errors.
     // try { throw ""; } catch (e,s) { _assertInZoneStack = s; }
-    _inAssertInZone = true;
-    async.runAsync(() => throw [_ZONE_CHECK, _assertInZoneStack]);
-    _inAssertInZone = false;
+    //_inAssertInZone = true;
+    //async.runAsync(() => throw [_ZONE_CHECK, _assertInZoneStack]);
+    //_inAssertInZone = false;
   }
 }
