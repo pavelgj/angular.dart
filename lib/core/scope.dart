@@ -172,7 +172,7 @@ class Scope {
    */
   Watch watch(expression, ReactionFn reactionFn,
               {context, FilterMap filters, bool readOnly: false}) {
-    _assertInternalStateConsistency();
+    assert(isAttached);
     assert(expression != null);
     AST ast;
     Watch watch;
@@ -236,19 +236,23 @@ class Scope {
   }
 
   ScopeEvent emit(String name, [data]) {
+    assert(isAttached);
     _assertInternalStateConsistency();
     return _Streams.emit(this, name, data);
   }
   ScopeEvent broadcast(String name, [data]) {
+    assert(isAttached);
     _assertInternalStateConsistency();
     return _Streams.broadcast(this, name, data);
   }
   ScopeStream on(String name) {
+    assert(isAttached);
     _assertInternalStateConsistency();
     return _Streams.on(this, rootScope._exceptionHandler, name);
   }
 
   Scope createChild(Object childContext) {
+    assert(isAttached);
     _assertInternalStateConsistency();
     var child = new Scope(childContext, rootScope, this,
                           _readWriteGroup.newGroup(childContext),
@@ -263,6 +267,7 @@ class Scope {
   }
 
   void destroy() {
+    assert(isAttached);
     _assertInternalStateConsistency();
     broadcast(ScopeEvent.DESTROY);
     _Streams.destroy(this);
@@ -583,30 +588,24 @@ class _Streams {
   static ScopeStream on(Scope scope,
                         ExceptionHandler _exceptionHandler,
                         String name) {
-    var scopeStream = scope._streams;
-    if (scopeStream == null || scopeStream._scope != scope) {
-      // We either don't have [_ScopeStreams] or it is inherited.
-      var newStreams = new _Streams(scope, _exceptionHandler, scopeStream);
-      _propagateNewStreams(scope, scopeStream, newStreams, _exceptionHandler);
-      scopeStream = newStreams;
-    }
-    return scopeStream._get(scope, name);
+    _forceNewScopeStream(scope, _exceptionHandler);
+    return scope._streams._get(scope, name);
   }
 
-  static void _propagateNewStreams(Scope scope, scopeStream,
-                                   _Streams newStreams,
-                                   ExceptionHandler _exceptionHandler) {
-    var scopeCursor = scope;
-    while (scopeCursor != null && scopeCursor._streams == scopeStream) {
-      scopeCursor._streams = newStreams;
+  static void _forceNewScopeStream(scope, _exceptionHandler) {
+    _Streams streams = scope._streams;
+    Scope scopeCursor = scope;
+    while(scopeCursor != null) {
+      _Streams cursorStreams = scopeCursor._streams;
+      var hasStream = cursorStreams != null;
+      var hasOwnStream = hasStream && cursorStreams._scope == scopeCursor;
+      if (hasOwnStream) return;
+
+      if (streams == null || (hasStream && !hasOwnStream)) {
+        streams = new _Streams(scopeCursor, _exceptionHandler, cursorStreams);
+      }
+      scopeCursor._streams = streams;
       scopeCursor = scopeCursor._parentScope;
-    }
-    if (scopeCursor != null && scopeCursor._streams._scope != scopeCursor) {
-      var splitStreams = new _Streams(scopeCursor, _exceptionHandler,
-          scopeCursor._streams);
-      var originalStreams = scopeCursor._streams;
-      scopeCursor._streams = splitStreams;
-      _propagateNewStreams(scopeCursor, originalStreams, splitStreams, _exceptionHandler);
     }
   }
 

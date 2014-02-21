@@ -269,9 +269,14 @@ main() => describe('scope', () {
       }));
 
       it('should not trigger assertions on scope fork', inject((RootScope root) {
-        var d1 = root.createChild(new PrototypeMap(root.context));
-        var d2 = root.createChild(new PrototypeMap(root.context));
+        var d1 = root.createChild({});
+        var d2 = root.createChild({});
+        var d3 = d2.createChild({});
+        expect(root.apply).not.toThrow();
         d1.on(ScopeEvent.DESTROY).listen((_) => null);
+        expect(root.apply).not.toThrow();
+        d3.on(ScopeEvent.DESTROY).listen((_) => null);
+        expect(root.apply).not.toThrow();
         d2.on(ScopeEvent.DESTROY).listen((_) => null);
         expect(root.apply).not.toThrow();
       }));
