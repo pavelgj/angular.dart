@@ -231,14 +231,17 @@ class BlockFactory {
           map(nodeAttrs, scope, controller, filters, notify);
         }
         if (attachDelayStatus != null) {
-          Watch watch;
-          watch = scope.watch(
-            '1', // Cheat a bit.
-            (_, __) {
-              watch.remove();
-              attachDelayStatus[0] = true;
-              checkAttachReady();
-            });
+          scope.rootScope.domRead(() {
+            if (!scope.isAttached) return;
+            Watch watch;
+            watch = scope.watch(
+                '1', // Cheat a bit.
+                (_, __) {
+                  watch.remove();
+                  attachDelayStatus[0] = true;
+                  checkAttachReady();
+                });
+          });
         }
         if (controller is NgDetachAware) {
           scope.on(ScopeEvent.DESTROY).listen((_) => controller.detach());

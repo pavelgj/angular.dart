@@ -480,7 +480,7 @@ void main() {
           expect(logger).toEqual(['new']);
 
           rootScope.apply();
-          var expected = ['new', 'attach:@ready; =>ready; =>!null', 'inner'];
+          var expected = ['new', 'inner', 'attach:@ready; =>ready; =>!null'];
           assert((() {
             // there is an assertion in flush which double checks that
             // flushes do not change model. This assertion creates one

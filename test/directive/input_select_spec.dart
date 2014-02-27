@@ -47,7 +47,7 @@ main() {
         expect(_.rootElement).toEqualSelect([['r2d2'], 'c3p0']);
       });
     });
-    
+
     TestBed _;
 
     beforeEach(inject((TestBed tb) => _ = tb));
@@ -310,6 +310,7 @@ main() {
               _.rootScope.apply(() {
                 _.rootScope.context['robots'] = ['c3p0', 'r2d2'];
               });
+              _.rootScope.apply();
               expect(_.rootElement).toEqualSelect(['c3p0', ['r2d2']]);
               expect(_.rootScope.context['robot']).toEqual('r2d2');
             });
@@ -336,6 +337,7 @@ main() {
               _.rootScope.apply(() {
                 _.rootScope.context['robots'] = ['c3p0', 'r2d2'];
               });
+              _.rootScope.apply();
               expect(_.rootElement).toEqualSelect(['', 'c3p0', ['r2d2']]);
               expect(_.rootScope.context['robot']).toEqual('r2d2');
             });
@@ -363,6 +365,7 @@ main() {
               _.rootScope.apply(() {
                 _.rootScope.context['robots'].insert(0, 'r2d2');
               });
+              _.rootScope.apply();
               expect(_.rootElement).toEqualSelect([['r2d2'], 'c3p0']);
               expect(_.rootScope.context['robot']).toEqual('r2d2');
 
